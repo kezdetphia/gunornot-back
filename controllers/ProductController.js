@@ -17,19 +17,65 @@ const getProducts = async (req, res) => {
   }
 };
 
-const createProduct = async (req, res) => {
-  const { name, rating, img, userId } = req.body;
+const getMyProducts = async (req, res) => {
+  const { productIds } = req.body;
   try {
-    const product = await Product.create({ name, rating, img, userId });
-    res.status(200).json(product);
-  } catch (err) {
-    console.error("Error creating product:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    const products = await Product.find({ _id: { $in: productIds } });
+    res.json(products);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).send("Server error");
+  }
+};
+
+const createProduct = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { name, img, userId, description } = req.body;
+
+    // Validate input
+    if (!name || !img || !userId || !description) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Convert userId to ObjectId
+
+    // Create new product
+    const newProduct = new Product({
+      name,
+      img,
+      userId,
+      description,
+    });
+
+    // Save product to database
+    const savedProduct = await newProduct.save({ session });
+
+    // Update user's products array
+    await User.findByIdAndUpdate(
+      userId,
+      { $push: { products: savedProduct._id } },
+      { new: true, session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json(savedProduct);
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error adding product:", error);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
 
 const updateVotes = async (req, res) => {
-  const { id, type } = req.body; // Ensure 'id' is included in the request body
+  const { id, type } = req.body;
   try {
     const product = await Product.findById(id);
     if (product) {
@@ -38,6 +84,14 @@ const updateVotes = async (req, res) => {
       } else if (type === "dislike") {
         product.totalDislikes += 1;
       }
+
+      // Calculate the new rating
+      const totalVotes = product.totalLikes + product.totalDislikes;
+      const ratingPercentage = totalVotes
+        ? (product.totalLikes / totalVotes) * 100
+        : 0;
+      product.rating = (ratingPercentage / 100) * 5;
+
       await product.save();
       res.status(200).json(product);
     } else {
@@ -53,4 +107,5 @@ module.exports = {
   getProducts,
   createProduct,
   updateVotes,
+  getMyProducts,
 };
