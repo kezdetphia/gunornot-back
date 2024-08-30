@@ -34,14 +34,10 @@ const createProduct = async (req, res) => {
 
   try {
     const { name, img, userId, description } = req.body;
-
     // Validate input
     if (!name || !img || !userId || !description) {
       return res.status(400).json({ message: "All fields are required" });
     }
-
-    // Convert userId to ObjectId
-
     // Create new product
     const newProduct = new Product({
       name,
@@ -49,7 +45,6 @@ const createProduct = async (req, res) => {
       userId,
       description,
     });
-
     // Save product to database
     const savedProduct = await newProduct.save({ session });
 
@@ -103,9 +98,46 @@ const updateVotes = async (req, res) => {
   }
 };
 
+const deleteProduct = async (req, res) => {
+  const { id } = req.body;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Find the product to get the userId
+    const product = await Product.findById(id).session(session);
+    if (!product) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Delete the product
+    await Product.findByIdAndDelete(id).session(session);
+
+    // Remove the product reference from the user's products array
+    await User.findByIdAndUpdate(
+      product.userId,
+      { $pull: { products: id } },
+      { new: true, session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({ message: "Product deleted" });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error deleting product:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   getProducts,
   createProduct,
   updateVotes,
   getMyProducts,
+  deleteProduct,
 };

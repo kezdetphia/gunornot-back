@@ -11,6 +11,8 @@ router.post("/updatevotes", ProductController.updateVotes);
 
 router.post("/getmyproducts", ProductController.getMyProducts); //this is post because we are sending an array of product ids
 
+router.post("/deleteproduct", ProductController.deleteProduct);
+
 // router.get("/getuserwithguns/:id", UserController.getUserWithGuns);
 
 module.exports = router;
