@@ -15,6 +15,6 @@ router.post("/signin", UserController.signIn);
 
 // router.get("/:id", UserController.getUser);
 
-router.get("/getuserwithguns/:id", UserController.getUserWithGuns);
+// router.get("/getuserwithguns/:id", UserController.getUserWithGuns);
 
 module.exports = router;

@@ -1,17 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const ProductController = require("../controllers/ProductController");
+const { verifyToken } = require("../middleware/verifyToken");
 
 // Register a new user
-router.post("/addproduct", ProductController.createProduct);
+router.post("/addproduct", verifyToken, ProductController.createProduct);
 
-router.get("/getproducts", ProductController.getProducts);
+router.get("/getproducts", verifyToken, ProductController.getProducts);
 
-router.post("/updatevotes", ProductController.updateVotes);
+router.post("/updatevotes", verifyToken, ProductController.updateVotes);
 
-router.post("/getmyproducts", ProductController.getMyProducts); //this is post because we are sending an array of product ids
+router.post("/getmyproducts", verifyToken, ProductController.getMyProducts); //this is post because we are sending an array of product ids
 
-router.post("/deleteproduct", ProductController.deleteProduct);
+router.post("/deleteproduct", verifyToken, ProductController.deleteProduct);
 
 // router.get("/getuserwithguns/:id", UserController.getUserWithGuns);
 

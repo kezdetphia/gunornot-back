@@ -6,24 +6,41 @@ const mongoose = require("mongoose");
 
 const signUp = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { formData } = req.body;
+
+    // Validate username and password length
+    if (formData.username.length < 4) {
+      return res
+        .status(400)
+        .json({ msg: "Username must be at least 4 characters long" });
+    }
+
+    if (formData.password.length < 6) {
+      return res
+        .status(400)
+        .json({ msg: "Password must be at least 6 characters long" });
+    }
+
+    if (formData.password !== formData.passwordRepeat) {
+      return res.status(400).json({ msg: "Passwords do not match" });
+    }
 
     // Check if user already exists
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: formData.email });
     if (user) {
       return res.status(400).json({ msg: "User already exists" });
     }
 
     // Create new user
     user = new User({
-      username,
-      email,
-      password,
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
     });
 
     // Hash password before saving
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+    user.password = await bcrypt.hash(formData.password, salt);
 
     await user.save();
 
@@ -44,8 +61,12 @@ const signUp = async (req, res) => {
       }
     );
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server error");
+    if (err.code === 11000) {
+      res.status(400).json({ msg: "Email address or username already exists" });
+    } else {
+      console.error(err.message);
+      res.status(500).json({ msg: "Server error" });
+    }
   }
 };
 
@@ -123,27 +144,28 @@ const getMyUser = async (req, res) => {
   }
 };
 
-const getUserWithGuns = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const user = await User.findById(id).populate("myCorps");
-    if (user) {
-      const { password, ...userWithoutPassword } = user.toObject();
-      console.log(userWithoutPassword);
-      res.status(200).json(userWithoutPassword);
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    console.error("Error fetching user with corps:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
+//Might implement something like this later if we wanna check out other profiles too
+// const getUserWithGuns = async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     const user = await User.findById(id).populate("myGuns");
+//     if (user) {
+//       const { password, ...userWithoutPassword } = user.toObject();
+//       console.log(userWithoutPassword);
+//       res.status(200).json(userWithoutPassword);
+//     } else {
+//       res.status(404).json({ message: "User not found" });
+//     }
+//   } catch (error) {
+//     console.error("Error fetching user with corps:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
 
 module.exports = {
   signUp,
   signIn,
   getUser,
-  getUserWithGuns,
+  // getUserWithGuns,
   getMyUser,
 };
