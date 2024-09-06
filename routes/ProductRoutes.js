@@ -14,6 +14,8 @@ router.post("/getmyproducts", verifyToken, ProductController.getMyProducts); //t
 
 router.post("/deleteproduct", verifyToken, ProductController.deleteProduct);
 
+// router.post("/getvotes", verifyToken, ProductController.getVotes);
+
 // router.get("/getuserwithguns/:id", UserController.getUserWithGuns);
 
 module.exports = router;

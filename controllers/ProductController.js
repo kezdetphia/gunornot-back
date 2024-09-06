@@ -69,29 +69,56 @@ const createProduct = async (req, res) => {
   }
 };
 
+// const updateVotes = async (req, res) => {
+//   const { id, type } = req.body;
+//   try {
+//     const product = await Product.findById(id);
+//     if (product) {
+//       if (type === "like") {
+//         product.totalLikes += 1;
+//       } else if (type === "dislike") {
+//         product.totalDislikes += 1;
+//       }
+
+//       // Calculate the new rating
+//       const totalVotes = product.totalLikes + product.totalDislikes;
+//       const ratingPercentage = totalVotes
+//         ? (product.totalLikes / totalVotes) * 100
+//         : 0;
+//       product.rating = (ratingPercentage / 100) * 5;
+
+//       await product.save();
+//       res.status(200).json(product);
+//     } else {
+//       res.status(404).json({ message: "Product not found" });
+//     }
+//   } catch (error) {
+//     console.error("Error updating votes:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
 const updateVotes = async (req, res) => {
-  const { id, type } = req.body;
+  console.log("update votes");
+  const { id, vote } = req.body;
   try {
     const product = await Product.findById(id);
-    if (product) {
-      if (type === "like") {
-        product.totalLikes += 1;
-      } else if (type === "dislike") {
-        product.totalDislikes += 1;
-      }
-
-      // Calculate the new rating
-      const totalVotes = product.totalLikes + product.totalDislikes;
-      const ratingPercentage = totalVotes
-        ? (product.totalLikes / totalVotes) * 100
-        : 0;
-      product.rating = (ratingPercentage / 100) * 5;
-
-      await product.save();
-      res.status(200).json(product);
-    } else {
-      res.status(404).json({ message: "Product not found" });
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
     }
+
+    console.log("prodct found", vote);
+    // Add the new rating to the product's votes array
+    product.votes.push(vote);
+
+    // Save the updated product
+    await product.save();
+
+    // Calculate the new average rating
+    const averageRating =
+      product.votes.reduce((acc, vote) => acc + vote, 0) / product.votes.length;
+
+    res.status(200).json({ averageRating });
   } catch (error) {
     console.error("Error updating votes:", error);
     res.status(500).json({ message: "Server error", error: error.message });
